@@ -13,6 +13,10 @@ export default function PremiumGeneratorApp() {
   const [successData, setSuccessData] = useState<any>(null);
   const [checkingSession, setCheckingSession] = useState(true);
 
+  // Status Real-time Server Palsu untuk mempercantik UI agar terkesan aktif
+  const [serverLoad, setServerLoad] = useState(42);
+  const [stokTersedia, setStokTersedia] = useState(128);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -23,7 +27,15 @@ export default function PremiumGeneratorApp() {
       setUser(session?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    // Efek fluktuasi beban server otomatis biar UI tampak hidup
+    const interval = setInterval(() => {
+      setServerLoad(Math.floor(Math.random() * (75 - 35 + 1)) + 35);
+    }, 4000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -33,7 +45,7 @@ export default function PremiumGeneratorApp() {
       if (authMode === 'register') {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        alert('Pendaftaran berhasil! Silakan periksa email untuk verifikasi atau langsung login.');
+        alert('Pendaftaran sukses! Silakan periksa email atau langsung login.');
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -57,8 +69,13 @@ export default function PremiumGeneratorApp() {
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Gagal memproses pembuatan akses premium.');
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Gagal memproses pembuatan akses premium.');
+      }
+
       setSuccessData(data.account);
+      setStokTersedia((prev) => (prev > 0 ? prev - 1 : 0));
     } catch (err: any) {
       setErrorMsg(err.message);
     } finally {
@@ -66,42 +83,125 @@ export default function PremiumGeneratorApp() {
     }
   };
 
-  const handleLogout = () => supabase.auth.signOut();
-
   if (checkingSession) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center text-gray-400">
-        <p className="animate-pulse">Menyiapkan Enkripsi Generator...</p>
+      <div className="min-h-screen bg-[#0b0f19] flex flex-col items-center justify-center text-teal-400 font-mono gap-3">
+        <div className="w-10 h-10 border-4 border-teal-500/20 border-t-teal-400 rounded-full animate-spin"></div>
+        <p className="text-xs uppercase tracking-widest animate-pulse">Menghubungkan Core Gateway...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-gray-100 font-sans flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl shadow-2xl p-6 relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 via-blue-500 to-indigo-600"></div>
+    <div className="min-h-screen bg-[#070a13] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/20 via-[#070a13] to-[#04060c] text-gray-100 font-sans flex flex-col items-center justify-center p-4">
+      
+      {/* Container Utama Ber-efek Glow */}
+      <div className="w-full max-w-lg bg-[#0d1527]/80 backdrop-blur-xl border border-gray-800/60 rounded-3xl shadow-[0_0_50px_-12px_rgba(20,184,166,0.15)] p-6 relative overflow-hidden transition-all duration-300">
+        
+        {/* Garis Neon Aksentuasi Atas */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-teal-400 to-transparent"></div>
 
+        {/* 1. TAMPILAN JIKA BELUM LOGIN (FORM AUTH LUXURY) */}
         {!user ? (
           <div>
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500">AM PREMIUM HUB</h1>
-              <p className="text-xs text-gray-500 mt-1">Autentikasi akun gateway untuk mencegah penyalahgunaan robot otomatis</p>
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-teal-500/10 border border-teal-500/20 rounded-full text-[10px] font-bold text-teal-400 tracking-wider uppercase mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-ping"></span> Secure Access v2.4
+              </div>
+              <h1 className="text-3xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-400 to-blue-500">
+                AM PREMIUM HUB
+              </h1>
+              <p className="text-xs text-gray-400 mt-1.5 max-w-sm mx-auto">
+                Masuk untuk memvalidasi token harian dan mencegah penyalahgunaan sistem oleh bot otomasi.
+              </p>
             </div>
 
-            {errorMsg && <div className="mb-4 p-3 bg-red-950/40 border border-red-500/40 rounded-lg text-xs text-red-300">⚠️ {errorMsg}</div>}
+            {errorMsg && (
+              <div className="mb-5 p-3.5 bg-red-950/30 border border-red-500/30 rounded-xl text-xs text-red-300 flex items-start gap-2 animate-shake">
+                <span>⚠️</span> <p>{errorMsg}</p>
+              </div>
+            )}
 
             <form onSubmit={handleAuthSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Alamat Email</label>
-                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-3 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-sm text-white" placeholder="name@example.com"/>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Alamat Email</label>
+                <input 
+                  type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#050914] border border-gray-800 rounded-xl text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none transition-all text-white placeholder-gray-600"
+                  placeholder="name@example.com"
+                />
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Kata Sandi</label>
-                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-3 py-2.5 bg-gray-950 border border-gray-800 rounded-xl text-sm text-white" placeholder="••••••••"/>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Kata Sandi</label>
+                <input 
+                  type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#050914] border border-gray-800 rounded-xl text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 focus:outline-none transition-all text-white placeholder-••••••••"
+                  placeholder="••••••••"
+                />
               </div>
-              <button type="submit" className="w-full py-3 bg-gradient-to-r from-teal-500 to-blue-600 text-white font-bold text-sm rounded-xl">{authMode === 'login' ? 'Masuk ke Dasbor' : 'Daftar Akun Baru'}</button>
+
+              <button type="submit" className="w-full py-3.5 mt-2 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-600 hover:opacity-90 active:scale-[0.99] text-gray-950 font-extrabold text-sm rounded-xl transition-all shadow-[0_4px_20px_rgba(20,184,166,0.25)]">
+                {authMode === 'login' ? 'MASUK KE DASBOR' : 'DAFTAR SEKARANG'}
+              </button>
             </form>
-            <div className="mt-6 text-center text-xs text-gray-500">
+
+            <div className="mt-8 text-center text-xs text-gray-500 border-t border-gray-800/40 pt-5">
+              {authMode === 'login' ? 'Belum memiliki hak akses? ' : 'Sudah terdaftar di sistem? '}
+              <button 
+                onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+                className="text-teal-400 hover:text-teal-300 font-bold underline transition-colors"
+              >
+                {authMode === 'login' ? 'Buat Akun Hub' : 'Silakan Login'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* 2. TAMPILKAN LAYAR GENERATOR UTAMA (UI SUPER MEWAH) */
+          <div>
+            {/* Header Profil User */}
+            <div className="flex justify-between items-center mb-6 bg-[#090f1d] border border-gray-800/50 p-3 rounded-2xl">
+              <div className="flex items-center gap-2.5 overflow-hidden">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center font-bold text-gray-950 text-xs shadow-md">
+                  {user.email?.charAt(0).toUpperCase()}
+                </div>
+                <div className="overflow-hidden">
+                  <span className="text-[9px] uppercase font-bold text-teal-400 block tracking-widest">Active Client</span>
+                  <p className="text-xs text-gray-300 truncate max-w-[160px] font-mono">{user.email}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => supabase.auth.signOut()}
+                className="text-[11px] bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-3 py-1.5 rounded-xl text-red-400 font-semibold transition-all"
+              >
+                Log Out
+              </button>
+            </div>
+
+            {/* Widget Status Server Grid */}
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="bg-[#050914] border border-gray-800/40 p-3 rounded-xl flex flex-col">
+                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Status Server</span>
+                <span className="text-xs text-emerald-400 font-bold mt-1 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> ONLINE (NORMAL)
+                </span>
+              </div>
+              <div className="bg-[#050914] border border-gray-800/40 p-3 rounded-xl flex flex-col">
+                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Est. Sisa Stok</span>
+                <span className="text-xs text-teal-400 font-mono font-bold mt-1">{stokTersedia} Akun Tersedia</span>
+              </div>
+            </div>
+
+            {/* Konten Sentral Deskripsi */}
+            <div className="text-center my-6">
+              <h2 className="text-2xl font-black tracking-tight text-white">Alight Motion Premium</h2>
+              <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
+                Klik tombol picu di bawah untuk melakukan kloning data lisensi premium via api.znn.my.id.
+              </p>
+            </div>
+
+            {/* Kotak Notifikasi Error */}
+            {errorMsg && (
+              <div className="my-5 p-4 bg-red-950/20 border border-red-500/20 rounded-2xl text-xs text-red-300 leading-relaxed shadow-inner">
               {authMode === 'login' ? 'Belum bergabung? ' : 'Sudah terdaftar? '}
               <button onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')} className="text-teal-400 hover:underline font-bold">{authMode === 'login' ? 'Buat Akun' : 'Silakan Login'}</button>
             </div>
