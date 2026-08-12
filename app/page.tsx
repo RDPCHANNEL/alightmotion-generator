@@ -13,7 +13,6 @@ export default function PremiumGeneratorApp() {
   const [successData, setSuccessData] = useState<any>(null);
   const [checkingSession, setCheckingSession] = useState(true);
 
-  // Status Real-time Server Palsu untuk mempercantik UI agar terkesan aktif
   const [serverLoad, setServerLoad] = useState(42);
   const [stokTersedia, setStokTersedia] = useState(128);
 
@@ -27,7 +26,6 @@ export default function PremiumGeneratorApp() {
       setUser(session?.user ?? null);
     });
 
-    // Efek fluktuasi beban server otomatis biar UI tampak hidup
     const interval = setInterval(() => {
       setServerLoad(Math.floor(Math.random() * (75 - 35 + 1)) + 35);
     }, 4000);
@@ -93,15 +91,123 @@ export default function PremiumGeneratorApp() {
   }
 
   return (
-    <div className="min-h-screen bg-[#070a13] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950/20 via-[#070a13] to-[#04060c] text-gray-100 font-sans flex flex-col items-center justify-center p-4">
-      
-      {/* Container Utama Ber-efek Glow */}
-      <div className="w-full max-w-lg bg-[#0d1527]/80 backdrop-blur-xl border border-gray-800/60 rounded-3xl shadow-[0_0_50px_-12px_rgba(20,184,166,0.15)] p-6 relative overflow-hidden transition-all duration-300">
-        
-        {/* Garis Neon Aksentuasi Atas */}
+    <div className="min-h-screen bg-[#070a13] text-gray-100 font-sans flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-lg bg-[#0d1527] border border-gray-800 rounded-3xl shadow-2xl p-6 relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-teal-400 to-transparent"></div>
 
-        {/* 1. TAMPILAN JIKA BELUM LOGIN (FORM AUTH LUXURY) */}
+        {!user ? (
+          <div>
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-teal-500/10 border border-teal-500/20 rounded-full text-[10px] font-bold text-teal-400 tracking-wider uppercase mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-ping"></span> Secure Access v2.4
+              </div>
+              <h1 className="text-3xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-400 to-blue-500">
+                AM PREMIUM HUB
+              </h1>
+              <p className="text-xs text-gray-400 mt-1.5 max-w-sm mx-auto">
+                Masuk untuk memvalidasi token harian dan mencegah penyalahgunaan sistem oleh bot otomasi.
+              </p>
+            </div>
+
+            {errorMsg && (
+              <div className="mb-5 p-3.5 bg-red-950/30 border border-red-500/30 rounded-xl text-xs text-red-300 flex items-start gap-2">
+                <span>⚠️</span> <p>{errorMsg}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleAuthSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Alamat Email</label>
+                <input 
+                  type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#050914] border border-gray-800 rounded-xl text-sm focus:border-teal-500 focus:outline-none transition-all text-white placeholder-gray-600"
+                  placeholder="name@example.com"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Kata Sandi</label>
+                <input 
+                  type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 bg-[#050914] border border-gray-800 rounded-xl text-sm focus:border-teal-500 focus:outline-none transition-all text-white"
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <button type="submit" className="w-full py-3.5 mt-2 bg-gradient-to-r from-teal-500 via-cyan-500 to-blue-600 text-gray-950 font-extrabold text-sm rounded-xl transition-all">
+                {authMode === 'login' ? 'MASUK KE DASBOR' : 'DAFTAR SEKARANG'}
+              </button>
+            </form>
+
+            <div className="mt-8 text-center text-xs text-gray-500 border-t border-gray-800/40 pt-5">
+              {authMode === 'login' ? 'Belum memiliki hak akses? ' : 'Sudah terdaftar di sistem? '}
+              <button 
+                type="button"
+                onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+                className="text-teal-400 hover:text-teal-300 font-bold underline transition-colors"
+              >
+                {authMode === 'login' ? 'Buat Akun Hub' : 'Silakan Login'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="flex justify-between items-center mb-6 bg-[#090f1d] border border-gray-800/50 p-3 rounded-2xl">
+              <div className="flex items-center gap-2.5 overflow-hidden">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-500 to-blue-600 flex items-center justify-center font-bold text-gray-950 text-xs shadow-md">
+                  {user.email?.charAt(0).toUpperCase()}
+                </div>
+                <div className="overflow-hidden">
+                  <span className="text-[9px] uppercase font-bold text-teal-400 block tracking-widest">Active Client</span>
+                  <p className="text-xs text-gray-300 truncate max-w-[160px] font-mono">{user.email}</p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => supabase.auth.signOut()}
+                className="text-[11px] bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 px-3 py-1.5 rounded-xl text-red-400 font-semibold transition-all"
+              >
+                Log Out
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="bg-[#050914] border border-gray-800/40 p-3 rounded-xl flex flex-col">
+                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Status Server</span>
+                <span className="text-xs text-emerald-400 font-bold mt-1 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> ONLINE
+                </span>
+              </div>
+              <div className="bg-[#050914] border border-gray-800/40 p-3 rounded-xl flex flex-col">
+                <span className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Est. Sisa Stok</span>
+                <span className="text-xs text-teal-400 font-mono font-bold mt-1">{stokTersedia} Akun</span>
+              </div>
+            </div>
+
+            <div className="text-center my-6">
+              <h2 className="text-2xl font-black tracking-tight text-white">Alight Motion Premium</h2>
+              <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
+                Klik tombol picu di bawah untuk melakukan kloning data lisensi premium via api.znn.my.id.
+              </p>
+            </div>
+
+            {errorMsg && (
+              <div className="my-5 p-4 bg-red-950/20 border border-red-500/20 rounded-2xl text-xs text-red-300 leading-relaxed">
+                🛑 <strong>Sistem Keamanan Menolak:</strong> {errorMsg}
+              </div>
+            )}
+
+            <button 
+              type="button"
+              onClick={triggerGenerator}
+              disabled={loading}
+              className="w-full py-4 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:opacity-95 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black text-sm rounded-xl transition-all shadow-[0_0_30px_rgba(79,70,229,0.25)]"
+            >
+              {loading ? 'BYPASSING ACCESS PROTOCOL...' : 'AMBIL AKSES PREMIUM AM'}
+            </button>
+
+            {successData && (
+              <div className="mt-6 p-4 bg-[#050914] border border-emerald-500/30 rounded-2xl space-y-4 relative">
+                <div className="absolute top-0 right-4 -translate-y-1/2">
         {!user ? (
           <div>
             <div className="text-center mb-8">
